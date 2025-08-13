@@ -48,15 +48,21 @@ class SaleOrder(models.Model):
 
                 for comp in components:
                     sku = comp.default_code or ""
-                    # Log to server logs
+                    comp_name = comp.name or ""
+                    if sku:
+                        comp_str = f"{comp_name} (SKU: {sku})"
+                    else:
+                        comp_str = comp_name
+
+                    # Log to server logs without square brackets
                     _logger.info(
-                        "[SKU_TEST] Order %s | Line %s | Pack %s -> Component %s (SKU: %s)",
+                        "[SKU_TEST] Order %s | Line %s | Pack %s -> Component %s",
                         order.name,
                         line.id,
-                        product.display_name,
-                        comp.display_name,
-                        sku,
+                        product.name,  # use plain name to avoid brackets
+                        comp_str
                     )
+
                     # Persist in a lightweight log model
                     self.env["sku_test.log"].create({
                         "order_id": order.id,
@@ -94,7 +100,6 @@ class SaleOrder(models.Model):
             pass
 
         # 2) product_pack community module (pack_line_ids on product.product or product.template)
-        #    Handles both possible placements defensively.
         if hasattr(product, "pack_line_ids"):
             for pl in product.pack_line_ids:
                 if getattr(pl, "product_id", False):
